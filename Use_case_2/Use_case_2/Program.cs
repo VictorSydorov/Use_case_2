@@ -1,32 +1,40 @@
+using Microsoft.AspNetCore.Diagnostics;
+using Stripe;
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
+builder.Services.Add(new ServiceDescriptor(typeof(ISingletonRetrievable<Balance>), new BalanceService()));
+builder.Services.Add(new ServiceDescriptor(typeof(IListable<BalanceTransaction, BalanceTransactionListOptions>), new BalanceTransactionService()));
+
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
-
-var summaries = new[]
+app.UseExceptionHandler(errorApp =>
 {
-    "Freezing", "Bracing", "Chilly", "Cool", "Mild", "Warm", "Balmy", "Hot", "Sweltering", "Scorching"
-};
+    errorApp.Run(async context =>
+    {
+        context.Response.StatusCode = StatusCodes.Status500InternalServerError;
+        context.Response.ContentType = "application/json";
 
-app.MapGet("/weatherforecast", () =>
-{
-    var forecast = Enumerable.Range(1, 5).Select(index =>
-        new WeatherForecast
-        (
-            DateTime.Now.AddDays(index),
-            Random.Shared.Next(-20, 55),
-            summaries[Random.Shared.Next(summaries.Length)]
-        ))
-        .ToArray();
-    return forecast;
+        var exceptionHandlerPathFeature = context.Features.Get<IExceptionHandlerPathFeature>();
+        var exception = exceptionHandlerPathFeature?.Error;
+
+        var result = new
+        {
+            error = new
+            {
+                message = "Internal Server Error",
+                details = exception?.Message
+            }
+        };
+
+        await context.Response.WriteAsJsonAsync(result);
+    });
 });
 
-app.Run();
+// Configure the HTTP request pipeline.
 
-internal record WeatherForecast(DateTime Date, int TemperatureC, string? Summary)
-{
-    public int TemperatureF => 32 + (int)(TemperatureC / 0.5556);
-}
+app.MapStripeServices();
+
+app.Run();
