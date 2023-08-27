@@ -1,6 +1,4 @@
-﻿using Stripe;
-
-public static class StripeServices
+﻿public static class StripeServices
 {
     /// <summary>
     /// Maps Stripe-related services to provided endpoint routes.
@@ -16,14 +14,14 @@ public static class StripeServices
         return routes;
     }
 
-    private static async Task<IResult> GetBalance(ISingletonRetrievable<Balance> balanceService, IConfiguration config)
+    internal static async Task<Balance> GetBalance(ISingletonRetrievable<Balance> balanceService, IConfiguration config)
     {
         try
         {
             StripeConfiguration.ApiKey = config["Stripe:ApiKey"];
             Balance balance = await balanceService.GetAsync();
 
-            return Results.Ok(balance);
+            return balance;
         }
         catch (Exception)
         {
@@ -31,7 +29,7 @@ public static class StripeServices
         }
     }
 
-    private static async Task<IResult> GetBalanceTransactions(IListable<BalanceTransaction, BalanceTransactionListOptions> service, IConfiguration config)
+    internal static async Task<StripeList<BalanceTransaction>> GetBalanceTransactions(IListable<BalanceTransaction, BalanceTransactionListOptions> service, IConfiguration config)
     {
         try
         {
@@ -39,13 +37,12 @@ public static class StripeServices
             var options = new BalanceTransactionListOptions { Currency = "usd" };
             StripeList<BalanceTransaction> balancetransactions = await service.ListAsync(options);
 
-            return Results.Ok(balancetransactions);
+            return balancetransactions;
         }
         catch (Exception)
         {
             throw new Exception("Server error.");
         }
     }
-
 }
 

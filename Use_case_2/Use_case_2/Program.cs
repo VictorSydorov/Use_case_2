@@ -1,5 +1,4 @@
 using Microsoft.AspNetCore.Diagnostics;
-using Stripe;
 
 var builder = WebApplication.CreateBuilder(args);
 
